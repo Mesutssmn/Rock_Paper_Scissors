@@ -178,10 +178,16 @@ if st.button("Clear Cache and Release Resources"):
     st.success("Cache cleared and resources released!")
 
 # Start the video stream with our custom transformer
-webrtc_streamer(
-    key="rps",
-    video_processor_factory=RPSVideoTransformer,
-    rtc_configuration={
-        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-    }
-)
+try:
+    # Your WebRTC streamer initialization
+    webrtc_streamer(
+        key="rps",
+        video_processor_factory=RPSVideoTransformer,
+        rtc_configuration={
+            "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+        },
+        async_processing=True  # Explicit async processing flag
+    )
+except Exception as e:
+    logging.error(f"Error in WebRTC Streamer: {e}")
+    st.error(f"An error occurred in the WebRTC connection: {e}")
