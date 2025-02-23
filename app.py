@@ -1,10 +1,11 @@
+import av
 import cv2
 import numpy as np
 import math
 import mediapipe as mp
 import random
 import streamlit as st
-import time
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 
 def euclidean_distance(a, b):
     """
@@ -19,10 +20,9 @@ def euclidean_distance(a, b):
     """
     return math.sqrt((a.x - b.x)**2 + (a.y - b.y)**2)
 
-# Initialize MediaPipe Hands
+# Initialize MediaPipe Hands and drawing utilities
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
-hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.5)
 
 def determine_winner(user_gesture, computer_gesture):
     """
@@ -64,9 +64,9 @@ def get_gesture(hand_landmarks, handedness):
     open_fingers = []
     finger_names = ["Thumb", "Index", "Middle", "Ring", "Pinky"]
 
-    # Calculate hand size as distance from wrist (landmark 0) to middle finger MCP (landmark 9)
+    # Calculate hand size using distance from wrist (landmark 0) to middle finger MCP (landmark 9)
     hand_size = euclidean_distance(hand_landmarks[0], hand_landmarks[9])
-    threshold_ratio = 0.6  # Adjust this value based on testing
+    threshold_ratio = 0.6  # Adjust based on testing
 
     # Thumb check: Use distance between tip (landmark 4) and IP joint (landmark 3)
     thumb_tip = hand_landmarks[4]
@@ -91,62 +91,55 @@ def get_gesture(hand_landmarks, handedness):
     else:
         return None
 
-# Streamlit app interface
+class RPSVideoTransformer(VideoTransformerBase):
+    """
+    A video transformer that processes each video frame, detects hand gestures,
+    and overlays game information on the frame.
+    """
+    def __init__(self):
+        self.hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.5)
+        self.computer_choice = None
+        self.result_text = ""
+        self.game_active = False
+
+    def transform(self, frame: av.VideoFrame) -> av.VideoFrame:
+        # Convert the frame to a numpy array
+        image = frame.to_ndarray(format="bgr24")
+        # Flip the image horizontally for a mirror effect
+        image = cv2.flip(image, 1)
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = self.hands.process(image_rgb)
+
+        if results.multi_hand_landmarks:
+            for hand_landmarks, handedness in zip(
+                results.multi_hand_landmarks,
+                [h.classification[0].label for h in results.multi_handedness]
+            ):
+                gesture = get_gesture(hand_landmarks.landmark, handedness)
+                if gesture:
+                    if not self.game_active:
+                        self.computer_choice = random.choice(["Rock", "Paper", "Scissors"])
+                        self.result_text = determine_winner(gesture, self.computer_choice)
+                        self.game_active = True
+
+                    # Draw hand landmarks
+                    mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                    
+                    y_start = 50
+                    cv2.putText(image, f"Your Gesture: {gesture}", (50, y_start),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    cv2.putText(image, f"Computer: {self.computer_choice}", (50, y_start + 40),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    cv2.putText(image, self.result_text, (50, y_start + 80),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 0), 3)
+        else:
+            self.game_active = False
+
+        return av.VideoFrame.from_ndarray(image, format="bgr24")
+
+# Streamlit interface
 st.title("Rock-Paper-Scissors Hand Gesture Game")
 st.write("This app uses your webcam to play Rock-Paper-Scissors using hand gestures.")
 
-# Create a placeholder for the video feed
-frame_placeholder = st.empty()
-
-start_button = st.button("Start Game")
-
-if start_button:
-    cap = cv2.VideoCapture(0)
-    computer_choice = None
-    result_text = ""
-    game_active = False
-
-    # Run the game loop
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            continue
-
-        frame = cv2.flip(frame, 1)
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = hands.process(frame_rgb)
-
-        if results.multi_hand_landmarks:
-            for hand_landmarks, handedness in zip(results.multi_hand_landmarks, 
-                                                  [h.classification[0].label for h in results.multi_handedness]):
-                gesture = get_gesture(hand_landmarks.landmark, handedness)
-                
-                if gesture:  # Valid gesture detected
-                    if not game_active:
-                        computer_choice = random.choice(["Rock", "Paper", "Scissors"])
-                        result_text = determine_winner(gesture, computer_choice)
-                        game_active = True
-
-                    # Draw landmarks on the frame
-                    mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-                    
-                    y_start = 50
-                    cv2.putText(frame, f"Your Gesture: {gesture}", (50, y_start),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                    cv2.putText(frame, f"Computer: {computer_choice}", (50, y_start + 40),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                    cv2.putText(frame, result_text, (50, y_start + 80),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 0), 3)
-        else:
-            game_active = False
-
-        # Convert the frame back to RGB for Streamlit
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame_placeholder.image(frame_rgb, channels="RGB")
-
-        # A brief sleep to yield control and update the Streamlit UI
-        time.sleep(0.03)
-
-    cap.release()
-    cv2.destroyAllWindows()
-    hands.close()
+# Start the video stream with our custom transformer
+webrtc_streamer(key="rps", video_transformer_factory=RPSVideoTransformer)
