@@ -1,4 +1,4 @@
-pip install opencv-python-headless
+opencv-python
 mediapipe
 numpy
 streamlit
