@@ -1,4 +1,12 @@
 import asyncio
+
+# Ensure asyncio event loop is properly set up at the start of the application
+try:
+    asyncio.get_running_loop()
+except RuntimeError:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
 import av
 import cv2
 import math
@@ -11,11 +19,6 @@ import logging
 # Enable detailed logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Ensure the event loop is set up
-try:
-    asyncio.get_running_loop()
-except RuntimeError:
-    asyncio.set_event_loop(asyncio.new_event_loop())
 
 def euclidean_distance(a, b):
     """
