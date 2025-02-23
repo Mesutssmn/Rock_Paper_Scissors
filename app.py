@@ -142,4 +142,4 @@ st.title("Rock-Paper-Scissors Hand Gesture Game")
 st.write("This app uses your webcam to play Rock-Paper-Scissors using hand gestures.")
 
 # Start the video stream with our custom transformer
-webrtc_streamer(key="rps", video_transformer_factory=RPSVideoTransformer)
+webrtc_streamer(key="rps", video_processor_factory=RPSVideoTransformer)
