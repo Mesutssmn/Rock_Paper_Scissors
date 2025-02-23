@@ -6,6 +6,10 @@ import mediapipe as mp
 import random
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+import logging
+
+# Enable detailed logging
+logging.basicConfig(level=logging.DEBUG)
 
 # Ensure the event loop is set up
 try:
@@ -107,25 +111,25 @@ class RPSVideoTransformer(VideoTransformerBase):
         self.computer_choice = None
         self.result_text = ""
         self.game_active = False
-        print("RPSVideoTransformer initialized")  # Debugging
+        logging.debug("RPSVideoTransformer initialized")  # Debugging
 
     def transform(self, frame: av.VideoFrame) -> av.VideoFrame:
         try:
-            print("Transform method called")  # Debugging
+            logging.debug("Transform method called")  # Debugging
             image = frame.to_ndarray(format="bgr24")
             image = cv2.flip(image, 1)
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             results = self.hands.process(image_rgb)
 
             if results.multi_hand_landmarks:
-                print("Hand landmarks detected")  # Debugging
+                logging.debug("Hand landmarks detected")  # Debugging
                 for hand_landmarks, handedness in zip(
                     results.multi_hand_landmarks,
                     [h.classification[0].label for h in results.multi_handedness]
                 ):
                     gesture = get_gesture(hand_landmarks.landmark, handedness)
                     if gesture:
-                        print(f"Gesture detected: {gesture}")  # Debugging
+                        logging.debug(f"Gesture detected: {gesture}")  # Debugging
                         if not self.game_active:
                             self.computer_choice = random.choice(["Rock", "Paper", "Scissors"])
                             self.result_text = determine_winner(gesture, self.computer_choice)
@@ -145,7 +149,7 @@ class RPSVideoTransformer(VideoTransformerBase):
 
             return av.VideoFrame.from_ndarray(image, format="bgr24")
         except Exception as e:
-            print(f"Error in transform method: {e}")  # Debugging
+            logging.error(f"Error in transform method: {e}")  # Debugging
             raise e
 
 # Streamlit interface
@@ -153,16 +157,9 @@ st.title("Rock-Paper-Scissors Hand Gesture Game")
 st.write("This app uses your webcam to play Rock-Paper-Scissors using hand gestures.")
 
 # Start the video stream with our custom transformer
-class SimpleVideoTransformer(VideoTransformerBase):
-    def transform(self, frame):
-        return frame
-
-st.title("Simple WebRTC Test")
-st.write("This app tests the WebRTC video stream.")
-
 webrtc_streamer(
-    key="simple",
-    video_processor_factory=SimpleVideoTransformer,
+    key="rps",
+    video_processor_factory=RPSVideoTransformer,
     rtc_configuration={
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     }
