@@ -23,7 +23,7 @@ This project implements a Rock-Paper-Scissors game using hand gestures, leveragi
 1. Clone the repository:
    ```bash
    git clone https://github.com/Mesutssmn/Rock_Paper_Scissors.git
-   cd rock-paper-scissors-hand-gesture
+   cd Rock_Paper_Scissors
    ```
 2. Install dependencies:
    ```bash
