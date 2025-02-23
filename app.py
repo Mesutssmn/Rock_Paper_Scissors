@@ -94,12 +94,11 @@ def main():
 
     # Cache clear button
     if st.button("Clear Cache and Restart"):
-        st.cache_data.clear()
-        st.cache_resource.clear()
+        # Reset session state scores only, clear cache if necessary later
         st.session_state.user_score = 0
         st.session_state.computer_score = 0
         st.session_state.ties = 0
-        st.success("Cache cleared and scores reset!")
+        st.success("Scores reset!")
 
     # Capture image from webcam
     img_file_buffer = st.camera_input("Capture Image from Webcam")
