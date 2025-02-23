@@ -66,4 +66,5 @@ This project is open-source and available under the MIT License.
 ## Future Improvements
 I will try to implement my code as a dynamic system on Streamlit. For now, I am getting some DEBUG warnings and couldn't manage to run it properly.
 
-*** You can reach out the game https://rock-paper-scissrs-game-static.streamlit.app/
+st.markdown('<a href="https://rock-paper-scissrs-game-static.streamlit.app/" target="_blank">Streamlit</a>', unsafe_allow_html=True)
+
