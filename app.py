@@ -4,7 +4,7 @@ import math
 import mediapipe as mp
 import random
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 import logging
 
 # Enable detailed logging
@@ -177,15 +177,18 @@ if st.button("Clear Cache and Release Resources"):
     clear_cache()
     st.success("Cache cleared and resources released!")
 
+# Define RTCConfiguration
+rtc_config = RTCConfiguration(
+    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+)
+
 # Start the video stream with our custom processor
 try:
     webrtc_streamer(
         key="rps",
         video_processor_factory=RPSVideoProcessor,
-        rtc_configuration={
-            "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-        },
-        async_processing=False
+        rtc_configuration=rtc_config,
+        async_processing=True
     )
 except Exception as e:
     logging.error(f"Error in WebRTC Streamer: {e}")
