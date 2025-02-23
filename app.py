@@ -78,11 +78,28 @@ def main():
     st.title("Rock-Paper-Scissors Game (Static Image)")
     st.write("Capture an image from your webcam to play Rock-Paper-Scissors with hand gestures!")
 
+    # Initialize session state for score
+    if "user_score" not in st.session_state:
+        st.session_state.user_score = 0
+    if "computer_score" not in st.session_state:
+        st.session_state.computer_score = 0
+    if "ties" not in st.session_state:
+        st.session_state.ties = 0
+
+    # Display scores
+    st.sidebar.header("Scoreboard")
+    st.sidebar.write(f"**You:** {st.session_state.user_score}")
+    st.sidebar.write(f"**Computer:** {st.session_state.computer_score}")
+    st.sidebar.write(f"**Ties:** {st.session_state.ties}")
+
     # Cache clear button
     if st.button("Clear Cache and Restart"):
         st.cache_data.clear()
         st.cache_resource.clear()
-        st.success("Cache cleared and resources reset!")
+        st.session_state.user_score = 0
+        st.session_state.computer_score = 0
+        st.session_state.ties = 0
+        st.success("Cache cleared and scores reset!")
 
     # Capture image from webcam
     img_file_buffer = st.camera_input("Capture Image from Webcam")
@@ -104,6 +121,14 @@ def main():
                 st.write(f"**Your Gesture:** {gesture}")
                 st.write(f"**Computer's Gesture:** {computer_choice}")
                 st.write(f"**Result:** {result_text}")
+
+                # Update scores
+                if result_text == "You Win!":
+                    st.session_state.user_score += 1
+                elif result_text == "Computer Wins!":
+                    st.session_state.computer_score += 1
+                else:  # Tie
+                    st.session_state.ties += 1
             else:
                 st.write("No valid gesture detected. Please show your hand clearly.")
         except Exception as e:
