@@ -66,6 +66,4 @@ This project is open-source and available under the MIT License.
 ## Future Improvements
 I will try to implement my code as a dynamic system on Streamlit. For now, I am getting some DEBUG warnings and couldn't manage to run it properly.
 
-<a href="https://rock-paper-scissrs-game-static.streamlit.app/" target="_blank">Streamlit</a>
-
-[Streamlit](https://rock-paper-scissrs-game-static.streamlit.app/)
+<a href="https://rock-paper-scissrs-game-static.streamlit.app/" target="_blank" rel="noreferrer noopener">Streamlit Link</a>
