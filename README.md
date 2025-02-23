@@ -1,6 +1,7 @@
 # Rock-Paper-Scissors Hand Gesture Game
 
-A simple Streamlit-based application that allows you to play Rock-Paper-Scissors using hand gestures captured via your webcam. The application uses the MediaPipe Hands module to detect hand landmarks and classify gestures into "Rock," "Paper," or "Scissors."
+A simple Streamlit-based application that allows you to play Rock-Paper-Scissors using hand gestures captured via your webcam. This is a **static version**, meaning it processes a single captured image rather than a real-time video stream. It uses the MediaPipe Hands module to detect hand landmarks and classify gestures into "Rock," "Paper," or "Scissors."
+
 
 ## Features
 - Capture a static image from your webcam using Streamlit's `st.camera_input`.
@@ -41,7 +42,8 @@ A simple Streamlit-based application that allows you to play Rock-Paper-Scissors
    * Paper: All five fingers (including thumb) detected as open.
    * Scissors: Only index and middle fingers detected as open.
 * Game Logic: Compares your gesture with a randomly chosen computer gesture to determine the winner.
-
+* Static Nature: Unlike real-time video processing, this version processes one image at a time when you click the capture button.
+  
 ## Troubleshooting
 * Webcam Not Working:
    * Ensure your webcam is connected and accessible.
