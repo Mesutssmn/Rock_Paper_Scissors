@@ -1,21 +1,14 @@
-import asyncio
 import av
 import cv2
 import math
 import mediapipe as mp
 import random
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
 import logging
 
 # Enable detailed logging
 logging.basicConfig(level=logging.DEBUG)
-
-# Ensure the event loop is set up
-try:
-    asyncio.get_running_loop()
-except RuntimeError:
-    asyncio.set_event_loop(asyncio.new_event_loop())
 
 def euclidean_distance(a, b):
     """
@@ -101,9 +94,9 @@ def get_gesture(hand_landmarks, handedness):
     else:
         return None
 
-class RPSVideoTransformer(VideoTransformerBase):
+class RPSVideoProcessor(VideoProcessorBase):
     """
-    A video transformer that processes each video frame, detects hand gestures,
+    A video processor that processes each video frame, detects hand gestures,
     and overlays game information on the frame.
     """
     def __init__(self):
@@ -111,31 +104,38 @@ class RPSVideoTransformer(VideoTransformerBase):
         self.computer_choice = None
         self.result_text = ""
         self.game_active = False
-        logging.debug("RPSVideoTransformer initialized")  # Debugging
+        logging.debug("RPSVideoProcessor initialized")
 
-    def transform(self, frame: av.VideoFrame) -> av.VideoFrame:
+    def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
         try:
-            logging.debug("Transform method called")  # Debugging
+            logging.debug("Starting frame processing")
             image = frame.to_ndarray(format="bgr24")
+            logging.debug("Frame converted to ndarray")
             image = cv2.flip(image, 1)
+            logging.debug("Frame flipped")
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            logging.debug("Frame converted to RGB")
             results = self.hands.process(image_rgb)
+            logging.debug("Hands processed")
 
             if results.multi_hand_landmarks:
-                logging.debug("Hand landmarks detected")  # Debugging
+                logging.debug(f"Hand landmarks detected: {len(results.multi_hand_landmarks)} hands")
                 for hand_landmarks, handedness in zip(
                     results.multi_hand_landmarks,
                     [h.classification[0].label for h in results.multi_handedness]
                 ):
                     gesture = get_gesture(hand_landmarks.landmark, handedness)
+                    logging.debug(f"Gesture detection result: {gesture}")
                     if gesture:
-                        logging.debug(f"Gesture detected: {gesture}")  # Debugging
+                        logging.debug(f"Valid gesture detected: {gesture}")
                         if not self.game_active:
                             self.computer_choice = random.choice(["Rock", "Paper", "Scissors"])
                             self.result_text = determine_winner(gesture, self.computer_choice)
                             self.game_active = True
+                            logging.debug(f"Game activated. Computer chose: {self.computer_choice}")
 
                         mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                        logging.debug("Landmarks drawn on frame")
                         
                         y_start = 50
                         cv2.putText(image, f"Your Gesture: {gesture}", (50, y_start),
@@ -144,19 +144,19 @@ class RPSVideoTransformer(VideoTransformerBase):
                                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
                         cv2.putText(image, self.result_text, (50, y_start + 80),
                                     cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 0), 3)
+                        logging.debug("Game text overlaid on frame")
             else:
                 self.game_active = False
+                logging.debug("No hands detected; game deactivated")
 
+            logging.debug("Frame processing complete")
             return av.VideoFrame.from_ndarray(image, format="bgr24")
         except Exception as e:
-            logging.error(f"Error in transform method: {e}")  # Debugging
+            logging.error(f"Error in recv method: {e}")
             raise e
 
     def __del__(self):
-        """
-        Cleanup resources when the transformer is destroyed.
-        """
-        logging.debug("Cleaning up RPSVideoTransformer resources")
+        logging.debug("Cleaning up RPSVideoProcessor resources")
         self.hands.close()
 
 # Streamlit interface
@@ -177,16 +177,15 @@ if st.button("Clear Cache and Release Resources"):
     clear_cache()
     st.success("Cache cleared and resources released!")
 
-# Start the video stream with our custom transformer
+# Start the video stream with our custom processor
 try:
-    # Your WebRTC streamer initialization
     webrtc_streamer(
         key="rps",
-        video_processor_factory=RPSVideoTransformer,
+        video_processor_factory=RPSVideoProcessor,
         rtc_configuration={
             "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
         },
-        async_processing=True  # Explicit async processing flag
+        async_processing=True
     )
 except Exception as e:
     logging.error(f"Error in WebRTC Streamer: {e}")
