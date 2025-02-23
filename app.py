@@ -1,4 +1,12 @@
 import asyncio
+
+# Start the event loop if it's not running already
+if not asyncio.get_event_loop().is_running():
+    loop = asyncio.get_event_loop()
+else:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
 import av
 import cv2
 import math
