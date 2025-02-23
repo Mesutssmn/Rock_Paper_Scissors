@@ -153,9 +153,16 @@ st.title("Rock-Paper-Scissors Hand Gesture Game")
 st.write("This app uses your webcam to play Rock-Paper-Scissors using hand gestures.")
 
 # Start the video stream with our custom transformer
+class SimpleVideoTransformer(VideoTransformerBase):
+    def transform(self, frame):
+        return frame
+
+st.title("Simple WebRTC Test")
+st.write("This app tests the WebRTC video stream.")
+
 webrtc_streamer(
-    key="rps",
-    video_processor_factory=RPSVideoTransformer,
+    key="simple",
+    video_processor_factory=SimpleVideoTransformer,
     rtc_configuration={
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     }
