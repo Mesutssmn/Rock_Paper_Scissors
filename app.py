@@ -154,5 +154,9 @@ webrtc_streamer(
     video_processor_factory=RPSVideoTransformer,
     rtc_configuration={
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-    }
+    },
+    media_stream_constraints={"video": True, "audio": False},
+    async_processing=True,  # WebRTC async çalışmasını sağlar
+    logging=True,  # Logları açar
 )
+
