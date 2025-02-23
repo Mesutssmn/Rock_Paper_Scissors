@@ -12,10 +12,16 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Ensure the event loop is set up
-try:
-    asyncio.get_running_loop()
-except RuntimeError:
-    asyncio.set_event_loop(asyncio.new_event_loop())
+def ensure_event_loop():
+    try:
+        # If an event loop is already running, do nothing
+        asyncio.get_running_loop()
+    except RuntimeError:
+        # If no event loop is running, create a new one
+        asyncio.set_event_loop(asyncio.new_event_loop())
+
+# Call the function to ensure the event loop is set up
+ensure_event_loop()
 
 def euclidean_distance(a, b):
     """
@@ -164,9 +170,3 @@ webrtc_streamer(
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     }
 )
-# Start the event loop if it's not running already
-if not asyncio.get_event_loop().is_running():
-    loop = asyncio.get_event_loop()
-else:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
