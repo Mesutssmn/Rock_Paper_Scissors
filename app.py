@@ -7,7 +7,7 @@ import random
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 
-# Ensure asyncio event loop is set up
+# Ensure the event loop is set up
 try:
     asyncio.get_running_loop()
 except RuntimeError:
@@ -107,21 +107,25 @@ class RPSVideoTransformer(VideoTransformerBase):
         self.computer_choice = None
         self.result_text = ""
         self.game_active = False
+        print("RPSVideoTransformer initialized")  # Debugging
 
     def transform(self, frame: av.VideoFrame) -> av.VideoFrame:
         try:
+            print("Transform method called")  # Debugging
             image = frame.to_ndarray(format="bgr24")
             image = cv2.flip(image, 1)
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             results = self.hands.process(image_rgb)
 
             if results.multi_hand_landmarks:
+                print("Hand landmarks detected")  # Debugging
                 for hand_landmarks, handedness in zip(
                     results.multi_hand_landmarks,
                     [h.classification[0].label for h in results.multi_handedness]
                 ):
                     gesture = get_gesture(hand_landmarks.landmark, handedness)
                     if gesture:
+                        print(f"Gesture detected: {gesture}")  # Debugging
                         if not self.game_active:
                             self.computer_choice = random.choice(["Rock", "Paper", "Scissors"])
                             self.result_text = determine_winner(gesture, self.computer_choice)
@@ -141,7 +145,7 @@ class RPSVideoTransformer(VideoTransformerBase):
 
             return av.VideoFrame.from_ndarray(image, format="bgr24")
         except Exception as e:
-            print(f"Error in transform method: {e}")
+            print(f"Error in transform method: {e}")  # Debugging
             raise e
 
 # Streamlit interface
