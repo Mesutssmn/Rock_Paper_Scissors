@@ -1,12 +1,4 @@
 import asyncio
-
-# Ensure asyncio event loop is properly set up at the start of the application
-try:
-    asyncio.get_running_loop()
-except RuntimeError:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
 import av
 import cv2
 import math
@@ -19,6 +11,11 @@ import logging
 # Enable detailed logging
 logging.basicConfig(level=logging.DEBUG)
 
+# Ensure the event loop is set up
+try:
+    asyncio.get_running_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 def euclidean_distance(a, b):
     """
@@ -155,9 +152,30 @@ class RPSVideoTransformer(VideoTransformerBase):
             logging.error(f"Error in transform method: {e}")  # Debugging
             raise e
 
+    def __del__(self):
+        """
+        Cleanup resources when the transformer is destroyed.
+        """
+        logging.debug("Cleaning up RPSVideoTransformer resources")
+        self.hands.close()
+
 # Streamlit interface
 st.title("Rock-Paper-Scissors Hand Gesture Game")
 st.write("This app uses your webcam to play Rock-Paper-Scissors using hand gestures.")
+
+# Clear cache and release resources when the app is stopped or refreshed
+def clear_cache():
+    """
+    Clear Streamlit's cache and release resources.
+    """
+    logging.debug("Clearing cache and releasing resources")
+    st.cache_data.clear()
+    st.cache_resource.clear()
+
+# Add a button to manually clear the cache
+if st.button("Clear Cache and Release Resources"):
+    clear_cache()
+    st.success("Cache cleared and resources released!")
 
 # Start the video stream with our custom transformer
 webrtc_streamer(
@@ -165,6 +183,5 @@ webrtc_streamer(
     video_processor_factory=RPSVideoTransformer,
     rtc_configuration={
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-    },
-    async_processing=True  # Ensure async processing is explicitly enabled
+    }
 )
