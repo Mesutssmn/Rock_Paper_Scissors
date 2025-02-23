@@ -1,18 +1,17 @@
 import asyncio
-
-try:
-    asyncio.get_running_loop()
-except RuntimeError:
-    asyncio.set_event_loop(asyncio.new_event_loop())
-    
 import av
 import cv2
-import numpy as np
 import math
 import mediapipe as mp
 import random
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+
+# Ensure asyncio event loop is set up
+try:
+    asyncio.get_running_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 def euclidean_distance(a, b):
     """
@@ -110,39 +109,40 @@ class RPSVideoTransformer(VideoTransformerBase):
         self.game_active = False
 
     def transform(self, frame: av.VideoFrame) -> av.VideoFrame:
-        # Convert the frame to a numpy array
-        image = frame.to_ndarray(format="bgr24")
-        # Flip the image horizontally for a mirror effect
-        image = cv2.flip(image, 1)
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results = self.hands.process(image_rgb)
+        try:
+            image = frame.to_ndarray(format="bgr24")
+            image = cv2.flip(image, 1)
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            results = self.hands.process(image_rgb)
 
-        if results.multi_hand_landmarks:
-            for hand_landmarks, handedness in zip(
-                results.multi_hand_landmarks,
-                [h.classification[0].label for h in results.multi_handedness]
-            ):
-                gesture = get_gesture(hand_landmarks.landmark, handedness)
-                if gesture:
-                    if not self.game_active:
-                        self.computer_choice = random.choice(["Rock", "Paper", "Scissors"])
-                        self.result_text = determine_winner(gesture, self.computer_choice)
-                        self.game_active = True
+            if results.multi_hand_landmarks:
+                for hand_landmarks, handedness in zip(
+                    results.multi_hand_landmarks,
+                    [h.classification[0].label for h in results.multi_handedness]
+                ):
+                    gesture = get_gesture(hand_landmarks.landmark, handedness)
+                    if gesture:
+                        if not self.game_active:
+                            self.computer_choice = random.choice(["Rock", "Paper", "Scissors"])
+                            self.result_text = determine_winner(gesture, self.computer_choice)
+                            self.game_active = True
 
-                    # Draw hand landmarks
-                    mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-                    
-                    y_start = 50
-                    cv2.putText(image, f"Your Gesture: {gesture}", (50, y_start),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                    cv2.putText(image, f"Computer: {self.computer_choice}", (50, y_start + 40),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                    cv2.putText(image, self.result_text, (50, y_start + 80),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 0), 3)
-        else:
-            self.game_active = False
+                        mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+                        
+                        y_start = 50
+                        cv2.putText(image, f"Your Gesture: {gesture}", (50, y_start),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                        cv2.putText(image, f"Computer: {self.computer_choice}", (50, y_start + 40),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                        cv2.putText(image, self.result_text, (50, y_start + 80),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 0), 3)
+            else:
+                self.game_active = False
 
-        return av.VideoFrame.from_ndarray(image, format="bgr24")
+            return av.VideoFrame.from_ndarray(image, format="bgr24")
+        except Exception as e:
+            print(f"Error in transform method: {e}")
+            raise e
 
 # Streamlit interface
 st.title("Rock-Paper-Scissors Hand Gesture Game")
@@ -156,4 +156,3 @@ webrtc_streamer(
         "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
     }
 )
-
